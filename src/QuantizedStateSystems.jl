@@ -1,5 +1,17 @@
 module QuantizedStateSystems
 
-# package code goes here
+  type Model
 
-end # module
+  end
+
+  abstract Quantizer
+
+  type ExplicitQuantizer <: Quantizer
+
+  end
+
+  type Integrator
+
+  end
+
+end

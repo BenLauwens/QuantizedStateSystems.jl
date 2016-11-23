@@ -41,8 +41,9 @@ tₙ = [0.0, 0.0]
 tₐ = [0.0, 0.0]
 t = 0.0
 while t < 200.0
+  tₒ = t
   t, i = findmin(tₙ)
-  x[i] = evaluate(x[i], Taylor1([t, 1.0]))
+  x[i] = evaluate(x[i], Taylor1([t- tₒ, 1.0]))
   tₐ[i] = t
   qₚ = copy(q)
   qₚ[i] = x[i] + Δq

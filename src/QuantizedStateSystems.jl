@@ -1,5 +1,11 @@
 module QuantizedStateSystems
 
+  using TaylorSeries
+
+  type Variable
+
+  end
+
   type Model
 
   end
@@ -10,7 +16,11 @@ module QuantizedStateSystems
 
   end
 
-  type Integrator
+  type Integrator{Q<:Quantizer}
+    quantizer :: Q
+    function Integrator()
+
+    end
 
   end
 

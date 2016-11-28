@@ -32,24 +32,28 @@ function test(order::Int, Δq::Float64)
   λ, P = eig([0.0 0.01; -100.0 -100.0])
   C = inv(P)*[0.0; 2020.0]
   E = -C./λ
-  D = -E + [0.0; 20.0]
-
+  D = -E + inv(P)*[0.0; 20.0]
   f = [f₁, f₂]
   q = [Taylor1(zeros(order+1))+0.0, Taylor1(zeros(order+1))+20.0]
   x = [integrate(f[1](q), 0.0), integrate(f[2](q), 20.0)]
-  #for i in 1:order
-  #  x = [integrate(f[1](x), 0.0), integrate(f[2](x), 20.0)]
-  #end
-  #q = deepcopy(x)
+  println(x)
+  for i in 1:order-1
+    x = [integrate(f[1](x), 0.0), integrate(f[2](x), 20.0)]
+    println(x)
+  end
+  q = deepcopy(x)
   q[1].coeffs[end] = 0.0
   q[2].coeffs[end] = 0.0
+  #q[1].coeffs[1] = 0.0 + 0.5*sign(x[1].coeffs[end])*Δq
+  #q[2].coeffs[1] = 20.0 + 0.5*sign(x[2].coeffs[end])*Δq
   tₓ = [0.0, 0.0]
   tₙ = [0.0, 0.0]
   tₐ = [0.0, 0.0]
   t = 0.0
   tₒ = 0.0
   it = [0, 0]
-  while t < 500.0
+  start = true
+  while t < 2000.0
     t, i = findmin(tₙ)
     it[i] += 1
     xₐ = P*(D.*exp(λ*t)+E)
@@ -125,6 +129,11 @@ function test(order::Int, Δq::Float64)
       x[i] = deepcopy(q[i])
       #x[i].coeffs[1] = x̲.coeffs[1]
       x[i].coeffs[1] = xₙ.coeffs[1]
+      if abs(q[i].coeffs[1]-x[i].coeffs[1]) > Δq# && tₒ != t
+        #q[i].coeffs[1] = x[i].coeffs[1] - sign(q[i].coeffs[1]+x[i].coeffs[1]) * Δq
+        #tₙ[i] = t
+        x[i].coeffs[1] = q[i].coeffs[1] - 0.5*sign(q[i].coeffs[1]-x[i].coeffs[1]) * Δq
+      end
     end
     println("----q_$i: $(q[i])")
     tₐ[i] = t
@@ -166,5 +175,5 @@ function test(order::Int, Δq::Float64)
   println(it)
 end
 
-test(3, 0.01)
-plot(tₚ, [x₁, x₂, xa₁, xa₂, q₁, q₂])
+test(4, 0.00005)
+plot(tₚ, [x₁-xa₁, x₂-xa₂])

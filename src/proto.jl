@@ -28,7 +28,7 @@ function nth_derivative(q₀::Vector{Float64}, res::Vector{Float64}, f::Function
   res[end] = x.coeffs[end]
 end
 
-function test(order::Int, Δq::Float64)
+function test(order::Int, Δq::Float64, duration::Float64)
   λ, P = eig([0.0 0.01; -100.0 -100.0])
   C = inv(P)*[0.0; 2020.0]
   E = -C./λ
@@ -53,7 +53,7 @@ function test(order::Int, Δq::Float64)
   tₒ = 0.0
   it = [0, 0]
   start = true
-  while t < 2000.0
+  while t < duration
     t, i = findmin(tₙ)
     it[i] += 1
     xₐ = P*(D.*exp(λ*t)+E)
@@ -175,5 +175,5 @@ function test(order::Int, Δq::Float64)
   println(it)
 end
 
-test(4, 0.00005)
+test(4, 0.00005, 150.0)
 plot(tₚ, [x₁-xa₁, x₂-xa₂])

@@ -44,8 +44,8 @@ function test(order::Int, Δq::Float64, duration::Float64)
   q = deepcopy(x)
   q[1].coeffs[end] = 0.0
   q[2].coeffs[end] = 0.0
-  #q[1].coeffs[1] = 0.0 + 0.5*sign(x[1].coeffs[end])*Δq
-  #q[2].coeffs[1] = 20.0 + 0.5*sign(x[2].coeffs[end])*Δq
+  q[1].coeffs[1] = 0.0 + 0.0*sign(x[1].coeffs[1])*Δq
+  q[2].coeffs[1] = 20.0 + 0.0*sign(x[2].coeffs[1])*Δq
   tₓ = [0.0, 0.0]
   tₙ = [0.0, 0.0]
   tₐ = [0.0, 0.0]
@@ -58,7 +58,7 @@ function test(order::Int, Δq::Float64, duration::Float64)
     it[i] += 1
     xₐ = P*(D.*exp(λ*t)+E)
     if t-tₒ > 0.0
-      for tt in 0.0:(t-tₒ)/3:t-tₒ
+      for tt in 0.0:(t-tₒ)/9:t-tₒ
         push!(tₚ, tₒ+tt)
         push!(x₁, evaluate(x[1], tt))#x[1].coeffs[1])
         push!(x₂, evaluate(x[2], tt))#x[2].coeffs[1])
@@ -74,18 +74,18 @@ function test(order::Int, Δq::Float64, duration::Float64)
     q[j] = evaluate(q[j], Taylor1([t-tₐ[j], 1.0]))
     println("----q_$j: $(q[j])")
     tₐ[j] = t
-    #  q̲ = deepcopy(q)
-    #  q̲[i] = x[i]-Δq
-    #  q̲[i].coeffs[end] = 0.0
-    #  x̲ = integrate(f[i](q̲), x[i].coeffs[1])
-    #  q̅ = deepcopy(q)
-    #  q̅[i] = x[i]+Δq
-    #  q̅[i].coeffs[end] = 0.0
-    #  x̅ = integrate(f[i](q̅), x[i].coeffs[1])
-    #  println("----q̲: $(q̲[i])")
-    #  println("----q̅: $(q̅[i])")
-    #  println("----x̲: $(x̲)")
-    #  println("----x̅: $(x̅)")
+    # q̲ = deepcopy(q)
+    # q̲[i] = x[i]-Δq
+    # q̲[i].coeffs[end] = 0.0
+    # x̲ = integrate(f[i](q̲), x[i].coeffs[1])
+    # q̅ = deepcopy(q)
+    # q̅[i] = x[i]+Δq
+    # q̅[i].coeffs[end] = 0.0
+    # x̅ = integrate(f[i](q̅), x[i].coeffs[1])
+    # println("----q̲: $(q̲[i])")
+    # println("----q̅: $(q̅[i])")
+    # println("----x̲: $(x̲)")
+    # println("----x̅: $(x̅)")
     # if sign(x̲.coeffs[end]) == sign(x̅.coeffs[end]) == sign(x[i].coeffs[end])
     #   if x̲.coeffs[end] > 0.0
     #     q[i] = deepcopy(q̅[i])
@@ -94,6 +94,7 @@ function test(order::Int, Δq::Float64, duration::Float64)
     #     q[i] = deepcopy(q̲[i])
     #     x[i] = deepcopy(x̲)
     #   end
+    # end
     qₙ = deepcopy(q)
     if x[i].coeffs[end] > 0.0
       qₙ[i] = x[i]+Δq
@@ -175,5 +176,5 @@ function test(order::Int, Δq::Float64, duration::Float64)
   println(it)
 end
 
-test(4, 0.00005, 150.0)
-plot(tₚ, [x₁-xa₁, x₂-xa₂])
+test(4, 0.000005, 5.0)
+plot(tₚ, [abs(x₁-xa₁), abs(x₂-xa₂)])

@@ -332,11 +332,11 @@ function test(order::Int, Δq::Float64, duration::Float64)
   end
   println(it)
 end
-δ = 5e-8
-test(4, δ, 500.0)
+δ = 5e-9
+test(4, δ, 1500.0)
 plot(tₚ, [abs(x₁-xe₁), abs(x₂-xe₂)])
 
-#plot(tₚ, [x₁, q₁, xe₁, x₂-20.0, q₂-20.0, xe₂-20.0])
+plot(tₚ, [x₁, q₁, xe₁, x₂, q₂, xe₂])
 gui()
 
 println("$(mean(abs(x₂-xe₂))), $(maximum(abs(x₂-xe₂))), $(2δ)")

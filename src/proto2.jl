@@ -1,4 +1,3 @@
-using TaylorSeries
 using Plots
 
 tₚ = Float64[]
@@ -225,24 +224,42 @@ function brent(f::Function, x0::Number, x1::Number, args...;
     error("Max iteration exceeded")
 end
 
-function integrate_ode(f::Function, q₀::Float64, q::Vector{Taylor1{Float64}}, order::Int, i::Int)
-  q[i].coeffs[2:end] = 0.0
-  q[i].coeffs[1] = q₀
-  for n in 1:order
-    q[i].coeffs[n+1] = f(q).coeffs[n]/n
+function calculate_derivatives(eqn::Vector{String}, order::Int)
+  n = length(eqn)
+  vars = Array(Symbol, n)
+  for (index, var) in enumerate(cont.vars)
+    vars[index] = var.symbol
   end
-  q[i]
-end
-
-function nth_derivative(q₀::Float64, f::Function, q::Vector{Taylor1{Float64}}, order::Int, i::Int)
-  q[i].coeffs[2:end] = 0.0
-  q[i].coeffs[1] = q₀
-  q[i] = integrate(f(q), q₀)
-  for k in 1:order-1
-    q[i] = integrate(f(q), q₀)
+  params = Array(Symbol, m)
+  for (index, param) in enumerate(cont.params)
+    params[index] = param.symbol
   end
-  q[i].coeffs[end]
-  #integrate_ode(f, q₀, q, order, i).coeffs[end]
+  args = Symbol[:t, vars...]
+  derivatives = Array(Function, order, n)
+  for (index, var) in enumerate(cont.vars)
+    derivatives[1, index] = eval(:(($(args...), $(params...))->$(var.ex)))
+  end
+  if order > 1
+    fun = Array(Expr, n)
+    for (index, var) in enumerate(cont.vars)
+      fun[index] = var.ex
+    end
+    for o = 2:order
+      prev_args = copy(args)
+      for i = 1:n
+        push!(args, symbol("d$(o-1)_", vars[i]))
+      end
+      for index in 1:n
+        ∇ = differentiate(fun[index], prev_args)
+        for j = 2:(o-1)*n+1
+          ∇[j] = :($(∇[j])*$(args[j+n]))
+        end
+        fun[index] = reduce((a,b)->:($a + $b), ∇)
+        derivatives[o, index] = eval(:(($(args...), $(params...))->$(fun[index])))
+      end
+    end
+  end
+  return derivatives
 end
 
 function f₁(q::Vector)

@@ -66,6 +66,7 @@ end
 function processExpr(expr::Expr, n::Produce=Produce(0x0))
   if expr.head == :macrocall && expr.args[1] == Symbol("@produce")
     n.n += one(n.n)
+    a = n.n
     push!(expr.args, n.n)
   end
   for i in 1:length(expr.args)
@@ -87,18 +88,14 @@ end
 macro produce(val, n::UInt8)
   quote
     cor.state = $n
-    return val
-    @label _state_:($n)
+    return $val
+    $(Expr(:symboliclabel, :($(Symbol(:_state_,:($n))))))
     cor.state = $(typemax(UInt8))
   end
 end
 
 macro elsegoto(n::UInt8)
-  quote
-    if cor.state == $n
-      @goto _state_:($n)
-    end
-  end
+  Expr(:if, :(cor.state == $n), Expr(:block, Expr(:symbolicgoto, :($(Symbol(:_state_,:($n)))))))
 end
 
 macro coroutine(name::Symbol, expr::Expr, params...)
@@ -146,12 +143,11 @@ function test_fibonnaci(n::Int)
     while true
       a, b = b, a+b
       @produce a
-      @produce b
     end
   end a=>BigInt(0)
   println(fib)
   for i in 1:n
-    consume(fib)
+    println(consume(fib))
   end
   fib
 end

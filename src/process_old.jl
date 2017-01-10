@@ -77,7 +77,7 @@ macro Process(name, expr, params...)
   )
   push!(proc_type.args[3].args, proc.constr)
   eval(proc_type)
-  :($(Symbol(name, "Process"))($((:($val) for (arg, val) in args)...)))
+  :()
 end
 
 c = 5

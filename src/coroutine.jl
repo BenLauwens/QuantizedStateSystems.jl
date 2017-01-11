@@ -104,26 +104,9 @@ macro coroutine(name::Symbol, expr::Expr, params...)
   n = Produce(0x0)
   new_expr = processExpr(deepcopy(expr), n)
   new_expr = modifyExpr(new_expr, symbols)
-<<<<<<< HEAD
   func_name = gensym()
   eval(
     quote
-=======
-  println(new_expr)
-  func_name = gensym()
-  eval(
-    quote
-      function $func_name(cor::Coroutine)
-        if cor.state == 0
-          @goto _state_start
-        end
-        $((:(@elsegoto $i) for i in 0x01:n.n)...)
-        @goto _state_end
-        @label _state_start
-        $((:($arg) for arg in new_expr.args)...)
-        @label _state_end
-      end
->>>>>>> origin/master
       type $name <: Coroutine
         state :: UInt8
         func :: Function
@@ -137,7 +120,6 @@ macro coroutine(name::Symbol, expr::Expr, params...)
           cor
         end
       end
-<<<<<<< HEAD
       function $func_name(cor::$name)
         if cor.state == 0
           @goto _state_start
@@ -148,8 +130,6 @@ macro coroutine(name::Symbol, expr::Expr, params...)
         $((:($arg) for arg in new_expr.args)...)
         @label _state_end
       end
-=======
->>>>>>> origin/master
     end)
   quote
     $name($((:($val) for (arg, val) in args)...))
@@ -158,17 +138,10 @@ end
 
 function test_fibonnaci(n::Int)
   fib = @coroutine Fibonnaci begin
-<<<<<<< HEAD
     b = BigInt(2)
     while true
       a, b = b, a+b
       @produce a
-      a, b = b, a*b
-      @produce(a)
-      a, b = b, b-a
-      @produce(a)
-      a, b = b, a*b
-      @produce(a)
     end
   end a=>BigInt(1)
   for i in 1:n
@@ -181,12 +154,6 @@ function fibonnaci()
   b = BigInt(2)
   while true
     a, b = b, a+b
-    produce(a)
-    a, b = b, a*b
-    produce(a)
-    a, b = b, b-a
-    produce(a)
-    a, b = b, a*b
     produce(a)
   end
 end
@@ -202,17 +169,3 @@ test_fibonnaci(1)
 @time test_fibonnaci(250)
 test_task_fibonnaci(1)
 @time test_task_fibonnaci(250)
-=======
-    b = BigInt(1)
-    while true
-      a, b = b, a+b
-      @produce a
-    end
-  end a=>BigInt(0)
-  println(fib)
-  for i in 1:n
-    println(consume(fib))
-  end
-  fib
-end
->>>>>>> origin/master

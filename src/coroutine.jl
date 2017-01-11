@@ -140,7 +140,7 @@ function test_fibonnaci(n::Int)
   fib = @coroutine Fibonnaci begin
     b = BigInt(2)
     while true
-      a, b = b, a+b
+      #a, b = b, a+b
       @produce a
     end
   end a=>BigInt(1)
@@ -153,7 +153,7 @@ function fibonnaci()
   a = BigInt(1)
   b = BigInt(2)
   while true
-    a, b = b, a+b
+    #a, b = b, a+b
     produce(a)
   end
 end
@@ -166,6 +166,6 @@ function test_task_fibonnaci(n::Int)
 end
 
 test_fibonnaci(1)
-@time test_fibonnaci(250)
+@time test_fibonnaci(12500)
 test_task_fibonnaci(1)
-@time test_task_fibonnaci(250)
+@time test_task_fibonnaci(12500)

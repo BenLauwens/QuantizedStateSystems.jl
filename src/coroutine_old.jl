@@ -138,22 +138,22 @@ end
 
 function test_fibonnaci(n::Int)
   fib = @coroutine Fibonnaci begin
-    b = BigInt(2)
+    b = 2.0
     while true
-      #a, b = b, a+b
+      a, b = b, a+b
       @produce a
     end
-  end a=>BigInt(1)
+  end a=>1.0
   @time for i in 1:n
     consume(fib)
   end
 end
 
 function fibonnaci()
-  a = BigInt(1)
-  b = BigInt(2)
+  a = 1.0
+  b = 2.0
   while true
-    #a, b = b, a+b
+    a, b = b, a+b
     produce(a)
   end
 end
@@ -166,6 +166,6 @@ function test_task_fibonnaci(n::Int)
 end
 
 test_fibonnaci(1)
-test_fibonnaci(12500)
+test_fibonnaci(125000)
 test_task_fibonnaci(1)
-test_task_fibonnaci(12500)
+test_task_fibonnaci(125000)

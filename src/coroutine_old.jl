@@ -144,7 +144,7 @@ function test_fibonnaci(n::Int)
       @produce a
     end
   end a=>BigInt(1)
-  for i in 1:n
+  @time for i in 1:n
     consume(fib)
   end
 end
@@ -160,12 +160,12 @@ end
 
 function test_task_fibonnaci(n::Int)
   fib = @task fibonnaci()
-  for i in 1:n
+  @time for i in 1:n
     consume(fib)
   end
 end
 
 test_fibonnaci(1)
-@time test_fibonnaci(12500)
+test_fibonnaci(12500)
 test_task_fibonnaci(1)
-@time test_task_fibonnaci(12500)
+test_task_fibonnaci(12500)

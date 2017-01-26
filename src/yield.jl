@@ -42,11 +42,9 @@ end
 function fibonnaci_stm(fib::Fib)
   if fib.state == 0x0
     @goto start
-  end
-  if fib.state == 0x1
+  elseif fib.state == 0x1
     @goto s1
-  end
-  if fib.state == 0x2
+  else
     @goto stop
   end
   @label start

@@ -28,7 +28,11 @@ function getSlots(args::Dict{Symbol, Any}, expr::Expr)
       function $name($((:($arg::typeof($val)) for (arg, val) in args)...))
         $((:($arg) for arg in expr.args)...)
       end
-      code_info, data_type = @code_typed($name($((:($val) for (arg, val) in args)...)))
+      if VERSION < v"0.6.0-dev"
+        code_info = @code_typed($name($((:($val) for (arg, val) in args)...)))
+      else
+        code_info, data_type = @code_typed($name($((:($val) for (arg, val) in args)...)))
+      end
       for i in 2:length(code_info.slotnames)
         $slots[code_info.slotnames[i]] = code_info.slottypes[i]
       end
@@ -119,7 +123,10 @@ end
 
 test_fibonnaci(1)
 test_fibonnaci(10000)
-test_fibonnaci_task(1)
-test_fibonnaci_task(10000)
-test_fibonnaci_channel(1)
-test_fibonnaci_channel(10000)
+if VERSION < v"0.6.0-dev"
+  test_fibonnaci_task(1)
+  test_fibonnaci_task(10000)
+else
+  test_fibonnaci_channel(1)
+  test_fibonnaci_channel(10000)
+end

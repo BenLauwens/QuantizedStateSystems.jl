@@ -17,6 +17,23 @@ function test_yieldto(n::Int)
   end
 end
 
+function fibonnaci_yield(super::Task)
+  a = 0.0
+  b = 1.0
+  while true
+    Base.schedule_and_wait(super, a)
+    a, b = b, a + b
+  end
+end
+
+function test_yield(n::Int)
+  ct = current_task()
+  fib = @task fibonnaci_yield(ct)
+  for i in 1:n
+    a = Base.schedule_and_wait(fib)
+  end
+end
+
 function fibonnaci_produce()
   a = 0.0
   b = 1.0
@@ -30,6 +47,22 @@ function test_consume(n::Int)
   fib = @task fibonnaci_produce()
   for i in 1:n
     a = consume(fib)
+  end
+end
+
+function fibonnaci_channel(ch::Channel)
+  a = 0.0
+  b = 1.0
+  while true
+    put!(ch, a)
+    a, b = b, a+b
+  end
+end
+
+function test_channel(n::Int)
+  fib = Channel(fibonnaci_channel; ctype=Float64, csize=0)
+  for i in 1:n
+    a = take!(fib)
   end
 end
 
@@ -68,10 +101,22 @@ function test_stm(n::Int)
   end
 end
 
-n = 1000000
+n = 10000
 test_yieldto(1)
+println("yieldto")
 @time test_yieldto(n)
-test_consume(1)
-@time test_consume(n)
+test_yield(1)
+println("schedule_and_wait")
+@time test_yield(n)
+if VERSION < v"0.6.0-dev"
+  test_consume(1)
+  println("produce")
+  @time test_consume(n)
+else
+  test_channel(1)
+  println("channel")
+  @time test_channel(n)
+end
 test_stm(1)
+println("statemachine")
 @time test_stm(n)

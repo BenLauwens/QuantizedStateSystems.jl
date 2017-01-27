@@ -28,9 +28,9 @@ function getSlots(args::Dict{Symbol, Any}, expr::Expr)
       function $name($((:($arg::typeof($val)) for (arg, val) in args)...))
         $((:($arg) for arg in expr.args)...)
       end
-      local lambda_info = @code_typed($name($((:($val) for (arg, val) in args)...)))
-      for i in 2:length(lambda_info.slotnames)
-        $slots[lambda_info.slotnames[i]]=lambda_info.slottypes[i]
+      code_info, data_type = @code_typed($name($((:($val) for (arg, val) in args)...)))
+      for i in 2:length(code_info.slotnames)
+        $slots[code_info.slotnames[i]] = code_info.slottypes[i]
       end
     end
     )
@@ -63,7 +63,7 @@ macro coroutine(name::Symbol, expr::Expr, params...)
   eval(type_expr)
   func_expr = quote
     function $func_name(cor::$name)
-      
+
     end
   end
   eval(func_expr)
@@ -74,17 +74,52 @@ end
 
 function test_fibonnaci(n::Int)
   fib = @coroutine Fibonnaci begin
-    b = 2.0
+    b = 1.0
     while true
       a, b = b, a+b
       @produce a
     end
-  end a=>1.0
-  println(fib)
+  end a=>0.0
   @time for i in 1:n
     consume(fib)
   end
-  println(fib)
 end
 
-test_fibonnaci(5)
+function fibonnaci_task()
+  a = 0.0
+  b = 1.0
+  while true
+    a, b = b, a+b
+    produce(a)
+  end
+end
+
+function test_fibonnaci_task(n::Int)
+  fib = Task(fibonnaci_task)
+  @time for i in 1:n
+    consume(fib)
+  end
+end
+
+function fibonnaci_channel(c::Channel)
+  a = 0.0
+  b = 1.0
+  while true
+    a, b = b, a+b
+    put!(c, a)
+  end
+end
+
+function test_fibonnaci_channel(n::Int)
+  chnl = Channel(fibonnaci_channel)
+  @time for i in 1:n
+    take!(chnl)
+  end
+end
+
+test_fibonnaci(1)
+test_fibonnaci(10000)
+test_fibonnaci_task(1)
+test_fibonnaci_task(10000)
+test_fibonnaci_channel(1)
+test_fibonnaci_channel(10000)

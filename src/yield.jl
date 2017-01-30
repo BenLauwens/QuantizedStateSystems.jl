@@ -13,7 +13,7 @@ function test_yieldto(n::Int)
   ct = current_task()
   fib = @task fibonnaci_yieldto(ct)
   for i in 1:n
-    a = yieldto(fib)
+    yieldto(fib)
   end
 end
 
@@ -30,7 +30,7 @@ function test_yield(n::Int)
   ct = current_task()
   fib = @task fibonnaci_yield(ct)
   for i in 1:n
-    a = Base.schedule_and_wait(fib)
+    Base.schedule_and_wait(fib)
   end
 end
 
@@ -46,7 +46,7 @@ end
 function test_consume(n::Int)
   fib = @task fibonnaci_produce()
   for i in 1:n
-    a = consume(fib)
+    consume(fib)
   end
 end
 
@@ -62,7 +62,7 @@ end
 function test_channel(n::Int)
   fib = Channel(fibonnaci_channel; ctype=Float64, csize=0)
   for i in 1:n
-    a = take!(fib)
+    take!(fib)
   end
 end
 
@@ -75,8 +75,7 @@ end
 function fibonnaci_stm(fib::Fib)
   if fib.state == 0x0
     @goto start
-  end
-  if fib.state == 0x1
+  elseif fib.state == 0x1
     @goto s1
   end
   @goto stop
@@ -97,7 +96,7 @@ end
 function test_stm(n::Int)
   fib = Fib(0.0, 0.0, 0x0)
   for i in 1:n
-    a = fibonnaci_stm(fib)
+    fibonnaci_stm(fib)
   end
 end
 

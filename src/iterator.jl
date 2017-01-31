@@ -17,19 +17,16 @@ end
 
 start{F<:FiniteStateMachine}(iter::Iterator{F}) = F(iter.args...)
 
-function next{F<:FiniteStateMachine}(iter::Iterator{F}, fsm::F)
-  fsm.state == typemax(UInt8) && error("Iterator is stopped!")
-  (_iterator(fsm), fsm)
-end
+next{F<:FiniteStateMachine}(iter::Iterator{F}, fsm::F) = (_iterator(fsm), fsm)
 
-done{F<:FiniteStateMachine}(iter::Iterator{F}, fsm::F) = fsm.state == typemax(UInt8)
+done{F<:FiniteStateMachine}(iter::Iterator{F}, fsm::F) = fsm.state == 0xff
 
 macro yield(val, fsm, n::UInt8)
   quote
     $(esc(fsm)).state = $n
     return $(esc(val))
     $(Expr(:symboliclabel, :($(Symbol(:_state_,:($n))))))
-    $(esc(fsm)).state = $(typemax(UInt8))
+    $(esc(fsm)).state = 0xff
   end
 end
 
@@ -156,14 +153,15 @@ macro iterator(expr)
   modifyExpr2(new_expr, StateCount(0x0))
   func_expr = quote
     function _iterator(fsm::$type_name)
-      if fsm.state == 0x0
+      if fsm.state == 0x00
         @goto _state_0
-      elseif fsm.state == 0x1
+      end
+      if fsm.state == 0x01
         @goto _state_1
       end
       error("Iterator has stopped!")
       @label _state_0
-      fsm.state = typemax(UInt8)
+      fsm.state = 0xff
       $((:($arg) for arg in new_expr.args)...)
     end
   end
@@ -186,8 +184,8 @@ end
 end
 
 for (i, fib) in enumerate(fibonnaci(1.0))
-  i > 10000 && break
-  #println(i, ": ", fib)
+  i > 10 && break
+  println(i, ": ", fib)
 end
 
 function test_stm(n::Int)

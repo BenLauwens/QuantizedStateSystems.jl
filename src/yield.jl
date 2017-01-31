@@ -78,7 +78,7 @@ function fibonnaci_stm(fib::Fib)
   elseif fib.state == 0x1
     @goto s1
   end
-  @goto stop
+  error("Iterator has stopped!")
   @label start
   fib.state = 0x2
   fib.a = 0.0
@@ -90,7 +90,6 @@ function fibonnaci_stm(fib::Fib)
     fib.state = 0x2
     fib.a, fib.b = fib.b, fib.a + fib.b
   end
-  @label stop
 end
 
 function test_stm(n::Int)

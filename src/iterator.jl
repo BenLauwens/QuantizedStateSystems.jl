@@ -24,12 +24,12 @@ end
 
 done{F<:FiniteStateMachine}(iter::Iterator{F}, fsm::F) = fsm.state == typemax(UInt8)
 
-macro yield(val, n::UInt8)
+macro yield(val, fsm, n::UInt8)
   quote
-    esc(fsm).state = $n
+    $(esc(fsm)).state = $n
     return $(esc(val))
     $(Expr(:symboliclabel, :($(Symbol(:_state_,:($n))))))
-    esc(fsm).state = $(typemax(UInt8))
+    $(esc(fsm)).state = $(typemax(UInt8))
   end
 end
 
@@ -115,6 +115,7 @@ end
 function modifyExpr2(expr::Expr, sc::StateCount)
   if expr.head == :macrocall && expr.args[1] == Symbol("@yield")
     sc.n += one(UInt8)
+    push!(expr.args, :fsm)
     push!(expr.args, sc.n)
   end
   for i in 1:length(expr.args)
@@ -166,7 +167,6 @@ macro iterator(expr)
       $((:($arg) for arg in new_expr.args)...)
     end
   end
-  println(func_expr)
   eval(func_expr)
   call_expr = deepcopy(expr)
   if call_expr.args[1].head == Symbol("::")
@@ -178,18 +178,27 @@ macro iterator(expr)
   call_expr
 end
 
-@iterator function fibonnaci(a::Float64; b=1.0) :: Float64
+@iterator function fibonnaci(a::Float64=0.0; b::Float64=1.0) :: Float64
   while true
     @yield a
     a, b = b, a+b
   end
 end
 
-iter = fibonnaci(1.0)
-fib = start(iter)
-_iterator(fib)
+for (i, fib) in enumerate(fibonnaci(1.0))
+  i > 10000 && break
+  #println(i, ": ", fib)
+end
 
-# for (i, fib) in enumerate(fibonnaci(1.0))
-#   i > 10 && break
-#   println(i, ": ", fib)
-# end
+function test_stm(n::Int)
+  iter = fibonnaci()
+  fib = start(iter)
+  for i in 1:n
+    next(iter, fib)
+  end
+end
+
+n = 10000
+test_stm(1)
+println("statemachine")
+@time test_stm(n)

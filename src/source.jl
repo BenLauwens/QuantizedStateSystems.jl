@@ -8,9 +8,9 @@ end
 
 abstract FiniteStateMachine
 
-start(fsm::FiniteStateMachine) = 0x0
-next(fsm::FiniteStateMachine, state=fsm.state) = fsm.func(fsm)
-done(iter::Iterator, state=fsm.state) = state == typemax(UInt8)
+start(iter::Function) = 0x0
+next(iter::Function, fsm::FiniteStateMachine) = iter(fsm)
+done(iter::Function, fsm::FiniteStateMachine) = fsm.state == typemax(UInt8)
 
 macro iterator(expr)
   if isa(expr, Expr) && expr.head == :function

@@ -17,7 +17,7 @@ end
 
 start{F<:FiniteStateMachine}(iter::Iterator{F}) = F(iter.args...)
 
-next{F<:FiniteStateMachine}(iter::Iterator{F}, fsm::F) = (_iterator(fsm), fsm)
+next{F<:FiniteStateMachine}(iter::Iterator{F}, fsm::F, ret::Any=nothing) = (_iterator(fsm, ret), fsm)
 
 done{F<:FiniteStateMachine}(iter::Iterator{F}, fsm::F) = fsm.state == 0xff
 
@@ -25,20 +25,21 @@ type Fibonnaci <: FiniteStateMachine
   state :: UInt8
   a :: Float64
   b :: Float64
+  c :: Any
   function Fibonnaci(a::Float64, b::Float64)
-    new(0x00, a, b)
+    fsm = new()
+    fsm.state = 0x00
+    fsm.a = a
+    fsm.b = b
+    fsm
   end
 end
 
-fibonnaci(a::Float64=0.0, b::Float64=1.0) = Iterator{Fibonnaci}(a, b)
+fibonnaci(a::Float64=0.0; b=1.0) = Iterator{Fibonnaci}(a, b)
 
-function _iterator{F<:FiniteStateMachine}(fsm::F) :: Float64
-  if fsm.state == 0x00
-    @goto _state_0_
-  end
-  if fsm.state == 0x01
-    @goto _state_1_
-  end
+function _iterator(fsm::Fibonnaci, _ret::Any) :: Float64
+  fsm.state == 0x00 && @goto _state_0_
+  fsm.state == 0x01 && @goto _state_1_
   error("Iterator has stopped!")
   @label _state_0_
   fsm.state = 0xff
@@ -67,4 +68,6 @@ end
 n = 10000
 test_stm(1)
 println("statemachine")
-@time test_stm(n)
+for i = 1:40
+  @time test_stm(n)
+end

@@ -17,7 +17,7 @@ end
 
 start{F<:FiniteStateMachine}(iter::Iterator{F}) = F(iter.args...)
 
-next{F<:FiniteStateMachine}(iter::Iterator{F}, fsm::F) = (_iterator(fsm), fsm)
+next{F<:FiniteStateMachine}(iter::Iterator{F}, fsm::F, ret::Any=nothing) = (_iterator(fsm, ret), fsm)
 
 done{F<:FiniteStateMachine}(iter::Iterator{F}, fsm::F) = fsm.state == 0xff
 
@@ -105,8 +105,8 @@ function transform1(expr::Expr, n::UInt8=0x00)
       sym = gensym()
       n += one(UInt8)
       insert!(expr.args, i, :(fsm.state = $n))
-      insert!(expr.args, i+2, :(fsm.state = 0xff))
-      insert!(expr.args, i+2, :(@label $(Symbol("_state",:($n)))))
+      insert!(expr.args, i+1, :(fsm.state = 0xff))
+      insert!(expr.args, i+1, :(@label $(Symbol("_state",:($n)))))
     elseif line
       n = transform2(expr, arg, i, n)
       line = false
@@ -126,13 +126,20 @@ function transform2(super::Expr, expr::Expr, line_no::Int, n::UInt8)
       super = expr
       continue
     elseif isa(arg, Expr) && arg.head == :macrocall && arg.args[1] == Symbol("@yield")
-      expr.args[i] = :(fsm._ret)
       sym = gensym()
       n += one(UInt8)
-      insert!(super.args, line_no, :(fsm.state = 0xff))
-      insert!(super.args, line_no, :(@label $(Symbol("_state",:($n)))))
-      insert!(super.args, line_no, arg.args[2])
-      insert!(super.args, line_no, :(fsm.state = $n))
+      if super.args[line_no] == arg
+        expr.args[i] = :(fsm.state = 0xff)
+        insert!(super.args, line_no, :(@label $(Symbol("_state",:($n)))))
+        insert!(super.args, line_no, arg.args[2])
+        insert!(super.args, line_no, :(fsm.state = $n))
+      else
+        expr.args[i] = :(_ret)
+        insert!(super.args, line_no, :(fsm.state = 0xff))
+        insert!(super.args, line_no, :(@label $(Symbol("_state",:($n)))))
+        insert!(super.args, line_no, arg.args[2])
+        insert!(super.args, line_no, :(fsm.state = $n))
+    end
     else
       n = transform2(super, arg, line_no, n)
     end
@@ -161,46 +168,67 @@ macro iterator(expr)
     error("Not a function definition")
   end
   args = getArguments(expr)
+
   slots = getSlots(deepcopy(expr))
   delete!(slots, Symbol("#temp#"))
   func_name = shift!(args)
+  if expr.args[1].head == Symbol("::")
+    func_ret = expr.args[1].args[2]
+  else
+    func_ret = nothing
+  end
   type_name = gensym()
   type_expr = quote
     type $type_name <: FiniteStateMachine
       state :: UInt8
-      _ret :: Any
-      $((:($slotname :: $slottype) for (slotname, slottype) in slots)...)
+      $((:($slotname :: $(slottype == Union{} ? Any : :($slottype))) for (slotname, slottype) in slots)...)
       function $type_name($((:($arg::$(slots[:($arg)])) for arg in args)...))
         fsm = new()
         fsm.state = 0x00
-        fsm._ret = nothing
         $((:(fsm.$arg = $arg) for arg in args)...)
         fsm
       end
     end
   end
+  #println(type_expr)
   eval(type_expr)
   new_expr = modifyExpr1(deepcopy(expr.args[2]), keys(slots))
   n = transform1(new_expr)
-  func_expr = quote
-    function _iterator(fsm::$type_name)
-      fsm.state == 0x00 && @goto _start
-      $((:(fsm.state == $i && @goto $(Symbol("_state",:($i)))) for i in 0x01:n)...)
-      error("Iterator has stopped!")
-      @label _start
-      fsm.state = 0xff
-      $((:($arg) for arg in new_expr.args)...)
+  if func_ret != nothing
+    func_expr = quote
+      function _iterator(fsm::$type_name, _ret::Any) :: $func_ret
+        fsm.state == 0x00 && @goto _start
+        $((:(fsm.state == $i && @goto $(Symbol("_state",:($i)))) for i in 0x01:n)...)
+        error("Iterator has stopped!")
+        @label _start
+        fsm.state = 0xff
+        $((:($arg) for arg in new_expr.args)...)
+      end
+    end
+  else
+    func_expr = quote
+      function _iterator(fsm::$type_name, _ret::Any)
+        fsm.state == 0x00 && @goto _start
+        $((:(fsm.state == $i && @goto $(Symbol("_state",:($i)))) for i in 0x01:n)...)
+        error("Iterator has stopped!")
+        @label _start
+        fsm.state = 0xff
+        $((:($arg) for arg in new_expr.args)...)
+      end
     end
   end
-  println(cleanup(func_expr))
+  #cleanup(func_expr)
+  #println(func_expr)
   eval(func_expr)
   call_expr = deepcopy(expr)
   if call_expr.args[1].head == Symbol("::")
     call_expr.args[1] = call_expr.args[1].args[1]
   end
+  call_expr.head = Symbol("=")
   call_expr.args[2] = quote
     Iterator{$type_name}($((:($arg) for arg in args)...))
   end
+  #dump(call_expr)
   call_expr
 end
 
@@ -227,4 +255,6 @@ end
 n = 10000
 test_stm(1)
 println("statemachine")
-@time test_stm(n)
+for i = 1:40
+  @time test_stm(n)
+end

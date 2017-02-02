@@ -1,17 +1,23 @@
-function play(f::Function)
-  println("hi")
-  f()
+function play(f::Function, g::String)
+  println(g)
+  f("ha")
   println("ho")
 end
 
 function do_some()
-@goto _jump
-  for i in 1:4
-    play() do
-      @label _jump
-      println("ha")
-    end
+  play("hi") do h
+    println(h)
   end
 end
 
 do_some()
+
+dump(:(
+  play("hi") do h
+    println(h)
+  end
+))
+
+dump(:(
+play((h)->println(h), "hi")
+))

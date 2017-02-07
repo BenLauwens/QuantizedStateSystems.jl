@@ -66,7 +66,7 @@ end
 
 n = 10000
 test_stm(1)
-println("statemachine")
+println("Iterator")
 for i = 1:40
   @time test_stm(n)
 end

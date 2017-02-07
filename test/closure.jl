@@ -28,7 +28,7 @@ end
 
 n = 10000
 test_clo(10)
-println("statemachine")
+println("Closure")
 for i = 1:40
   @time test_clo(n)
 end

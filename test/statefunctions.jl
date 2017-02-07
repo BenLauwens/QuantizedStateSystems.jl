@@ -31,7 +31,7 @@ end
 
 n = 10000
 test_stm(10)
-println("statemachine")
+println("Statefunction")
 for i = 1:40
   @time test_stm(n)
 end

@@ -25,7 +25,6 @@ type Fibonnaci <: FiniteStateMachine
   state :: UInt8
   a :: Float64
   b :: Float64
-  c :: Any
   function Fibonnaci(a::Float64, b::Float64)
     fsm = new()
     fsm.state = 0x00

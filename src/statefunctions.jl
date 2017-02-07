@@ -4,7 +4,7 @@ type Fibonnaci
   _state :: UInt8
   a :: Float64
   b :: Float64
-  Fibonnaci(a::Float64, b::Float64) = new(0x00, a, b)
+  Fibonnaci(a::Float64=0.0, b::Float64=1.0) = new(0x00, a, b)
 end
 
 function (fsm::Fibonnaci)(_ret::Any=nothing) :: Float64
@@ -17,14 +17,21 @@ function (fsm::Fibonnaci)(_ret::Any=nothing) :: Float64
     fsm._state = 0x01
     return fsm.a
     @label _STATE_1
-    isa(_ret, Exception) && throw(_ret)
     fsm._state = 0xff
     fsm.a, fsm.b = fsm.b, fsm.a+fsm.b
   end
 end
 
-fib = Fibonnaci(0.0, 1.0)
-for i in 1:10
-  println(fib())
+function test_stm(n::Int)
+  fib = Fibonnaci()
+  for i in 1:n
+    fib()
+  end
 end
-println(fib(error("Enough!")))
+
+n = 10000
+test_stm(10)
+println("statemachine")
+for i = 1:40
+  @time test_stm(n)
+end

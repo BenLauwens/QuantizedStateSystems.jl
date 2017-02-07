@@ -65,11 +65,22 @@ function getSlots(expr::Expr) :: Dict{Symbol, Type}
   else
     copy_expr.args[1].args[1].args[1] = name
   end
-  code_expr = quote
-    $copy_expr
-    for (code_info, data_type) in code_typed($name)
-      for i in 2:length(code_info.slotnames)
-        $slots[code_info.slotnames[i]] = code_info.slottypes[i]
+  if VERSION < v"0.6.0-dev"
+    code_expr = quote
+      $copy_expr
+      for lambda_info in code_typed($name)
+        for i in 2:length(lambda_info.slotnames)
+          $slots[lambda_info.slotnames[i]] = lambda_info.slottypes[i]
+        end
+      end
+    end
+  else
+    code_expr = quote
+      $copy_expr
+      for (code_info, data_type) in code_typed($name)
+        for i in 2:length(code_info.slotnames)
+          $slots[code_info.slotnames[i]] = code_info.slottypes[i]
+        end
       end
     end
   end

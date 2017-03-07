@@ -1,4 +1,5 @@
-using Plots
+#using Plots
+using TaylorSeries
 
 tₚ = Float64[]
 xe₁ = Float64[]
@@ -490,7 +491,7 @@ end
 @time test(4, δ, 500.0)
 #plot(tₚ, [abs(x₁-xe₁), abs(x₂-xe₂)])
 
-plot(tₚ, [x₁, q₁, xe₁, x₂, q₂, xe₂])
-gui()
+#plot(tₚ, [x₁, q₁, xe₁, x₂, q₂, xe₂])
+#gui()
 
 println("$(mean(abs(x₁-xe₁))), $(maximum(abs(x₁-xe₁))), $(mean(abs(x₂-xe₂))), $(maximum(abs(x₂-xe₂))), $(2δ)")

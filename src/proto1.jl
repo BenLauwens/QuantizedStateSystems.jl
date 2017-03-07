@@ -1,5 +1,5 @@
 using TaylorSeries
-using Plots
+#using Plots
 
 tₚ = Float64[]
 xe₁ = Float64[]
@@ -278,10 +278,10 @@ function test(order::Int, Δq::Float64, duration::Float64)
     ##println("-------- $tₙ, $i")
     j = 3 - i
     it[i] += 1
-    xe = P*diagm(exp(λ*t))*inv(P)*[0.0; 20.0]+P*diagm((exp(λ*t)-1)./λ)*inv(P)*[0.0;2020.0]
+    xe = P*diagm(exp.(λ*t))*inv(P)*[0.0; 20.0]+P*diagm((exp.(λ*t)-1)./λ)*inv(P)*[0.0;2020.0]
     if t-tₒ > 0.0
       for tt in 0.0:(t-tₒ)/20:t-tₒ
-        xe = P*diagm(exp(λ*(tₒ+tt)))*inv(P)*[0.0; 20.0]+P*diagm((exp(λ*(tₒ+tt))-1)./λ)*inv(P)*[0.0;2020.0]
+        xe = P*diagm(exp.(λ*(tₒ+tt)))*inv(P)*[0.0; 20.0]+P*diagm((exp.(λ*(tₒ+tt))-1)./λ)*inv(P)*[0.0;2020.0]
         push!(tₚ, tₒ+tt)
         push!(x₁, evaluate(x[1], tt))#x[1].coeffs[1])
         push!(x₂, evaluate(x[2], tt))#x[2].coeffs[1])
@@ -473,7 +473,7 @@ end
 @time test(4, δ, 500.0)
 #plot(tₚ, [abs(x₁-xe₁), abs(x₂-xe₂)])
 
-plot(tₚ, [x₁, q₁, xe₁, x₂, q₂, xe₂])
-gui()
+#plot(tₚ, [x₁, q₁, xe₁, x₂, q₂, xe₂])
+#gui()
 
-println("$(mean(abs(x₁-xe₁))), $(maximum(abs(x₁-xe₁))), $(mean(abs(x₂-xe₂))), $(maximum(abs(x₂-xe₂))), $(2δ)")
+println("$(mean(abs.(x₁-xe₁))), $(maximum(abs.(x₁-xe₁))), $(mean(abs.(x₂-xe₂))), $(maximum(abs.(x₂-xe₂))), $(2δ)")

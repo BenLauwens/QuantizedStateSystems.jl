@@ -21,3 +21,9 @@ dump(:(
 dump(:(
 play((h)->println(h), "hi")
 ))
+
+macro transformDo(expr)
+  println(expr)
+end
+
+@transformDo

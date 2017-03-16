@@ -1,8 +1,8 @@
 workspace()
 
-function fibonnaci(a::Float64=0.0, b::Float64=1.0) :: Function
+function fibonnaci(a::BigInt=BigInt(0), b::BigInt=BigInt(1)) :: Function
   _state = 0x00
-  function fib(ret::Any = nothing) :: Float64
+  function fib(ret::Any = nothing) :: BigInt
     _state == 0x00 && @goto _STATE_0
     _state == 0x01 && @goto _STATE_1
     error("Iterator has stopped!")
@@ -20,12 +20,12 @@ end
 
 type Fibonnaci
   _state :: UInt8
-  a :: Float64
-  b :: Float64
-  Fibonnaci(a::Float64=0.0, b::Float64=1.0) = new(0x00, a, b)
+  a :: BigInt
+  b :: BigInt
+  Fibonnaci(a::BigInt=BigInt(0), b::BigInt=BigInt(1)) = new(0x00, a, b)
 end
 
-function (fib::Fibonnaci)() :: Float64
+function (fib::Fibonnaci)() :: BigInt
   fib._state == 0x00 && @goto _STATE_0
   fib._state == 0x01 && @goto _STATE_1
   error("Iterator has stopped!")

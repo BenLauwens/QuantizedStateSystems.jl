@@ -1,5 +1,7 @@
-#using Plots
 using TaylorSeries
+using Plots
+
+plotlyjs()
 
 tₚ = Float64[]
 xe₁ = Float64[]
@@ -22,7 +24,7 @@ function quadratic(coeff::Vector{Float64})
   if coeff[3] == 0.0
     res = linear(coeff[1:2])
   else
-    res = Array(Complex{Float64}, 2)
+    res = Array{Complex{Float64}}(2)
     if coeff[1] == 0.0
       res[1] = 0.0
       res[2] = linear(coeff[2:3])
@@ -56,7 +58,7 @@ function cubic(coeff::Vector{Float64})
   if coeff[4] == 0.0
     res = quadratic(coeff[1:3])
   else
-    res = Array(Complex{Float64}, 3)
+    res = Array{Complex{Float64}}(3)
     if coeff[1] == 0.0
       res[1] = 0.0
       res[2:3] = quadratic(coeff[2:4])
@@ -94,7 +96,7 @@ function quartic(coeff::Vector{Float64})
   if coeff[5] == 0.0
     res = cubic(coeff[1:4])
   else
-    res = Array(Complex{Float64}, 4)
+    res = Array{Complex{Float64}}(4)
     if coeff[1] == 0.0
       res[1] = 0.0
       res[2:4] = cubic(coeff[2:5])
@@ -139,7 +141,7 @@ function roots(coeff::Vector{Float64}) :: Vector{Complex{Float64}}
     if coeff[n] == 0.0
       res = roots(coeff[1:n-1])
     else
-      res = Array(Complex{Float64}, n-1)
+      res = Array{Complex{Float64}}(n-1)
       if coeff[1] == 0.0
         res[1] = 0.0
         res[2:n-1] = roots(coeff[2:n])
@@ -225,42 +227,24 @@ function brent(f::Function, x0::Number, x1::Number, args...;
     error("Max iteration exceeded")
 end
 
-function calculate_derivatives(eqn::Vector{String}, order::Int)
-  n = length(eqn)
-  vars = Array(Symbol, n)
-  for (index, var) in enumerate(cont.vars)
-    vars[index] = var.symbol
+function integrate_ode(f::Function, q₀::Float64, q::Vector{Taylor1{Float64}}, order::Int, i::Int)
+  q[i].coeffs[2:end] = 0.0
+  q[i].coeffs[1] = q₀
+  for n in 1:order
+    q[i].coeffs[n+1] = f(q).coeffs[n]/n
   end
-  params = Array(Symbol, m)
-  for (index, param) in enumerate(cont.params)
-    params[index] = param.symbol
+  q[i]
+end
+
+function nth_derivative(q₀::Float64, f::Function, q::Vector{Taylor1{Float64}}, order::Int, i::Int)
+  q[i].coeffs[2:end] = 0.0
+  q[i].coeffs[1] = q₀
+  q[i] = integrate(f(q), q₀)
+  for k in 1:order-1
+    q[i] = integrate(f(q), q₀)
   end
-  args = Symbol[:t, vars...]
-  derivatives = Array(Function, order, n)
-  for (index, var) in enumerate(cont.vars)
-    derivatives[1, index] = eval(:(($(args...), $(params...))->$(var.ex)))
-  end
-  if order > 1
-    fun = Array(Expr, n)
-    for (index, var) in enumerate(cont.vars)
-      fun[index] = var.ex
-    end
-    for o = 2:order
-      prev_args = copy(args)
-      for i = 1:n
-        push!(args, symbol("d$(o-1)_", vars[i]))
-      end
-      for index in 1:n
-        ∇ = differentiate(fun[index], prev_args)
-        for j = 2:(o-1)*n+1
-          ∇[j] = :($(∇[j])*$(args[j+n]))
-        end
-        fun[index] = reduce((a,b)->:($a + $b), ∇)
-        derivatives[o, index] = eval(:(($(args...), $(params...))->$(fun[index])))
-      end
-    end
-  end
-  return derivatives
+  q[i].coeffs[end]
+  #integrate_ode(f, q₀, q, order, i).coeffs[end]
 end
 
 function f₁(q::Vector)
@@ -277,7 +261,7 @@ function test(order::Int, Δq::Float64, duration::Float64)
   E = -C./λ
   D = -E + inv(P)*[0.0; 20.0]
   f = [f₁, f₂]
-  q = [Taylor1(zeros(order+1))+0.0, Taylor1(zeros(order+1))+20.0]
+  q = [0*Taylor1(zeros(order+1))+0.0, 0*Taylor1(zeros(order+1))+20.0]
   x = [integrate(f[1](q), 0.0), integrate(f[2](q), 20.0)]
   for i in 1:order-1
     q = deepcopy(x)
@@ -296,10 +280,10 @@ function test(order::Int, Δq::Float64, duration::Float64)
     ##println("-------- $tₙ, $i")
     j = 3 - i
     it[i] += 1
-    xe = P*diagm(exp(λ*t))*inv(P)*[0.0; 20.0]+P*diagm((exp(λ*t)-1)./λ)*inv(P)*[0.0;2020.0]
+    xe = P*diagm(exp.(λ*t))*inv(P)*[0.0; 20.0]+P*diagm((exp.(λ*t)-1)./λ)*inv(P)*[0.0;2020.0]
     if t-tₒ > 0.0
       for tt in 0.0:(t-tₒ)/20:t-tₒ
-        xe = P*diagm(exp(λ*(tₒ+tt)))*inv(P)*[0.0; 20.0]+P*diagm((exp(λ*(tₒ+tt))-1)./λ)*inv(P)*[0.0;2020.0]
+        xe = P*diagm(exp.(λ*(tₒ+tt)))*inv(P)*[0.0; 20.0]+P*diagm((exp.(λ*(tₒ+tt))-1)./λ)*inv(P)*[0.0;2020.0]
         push!(tₚ, tₒ+tt)
         push!(x₁, evaluate(x[1], tt))#x[1].coeffs[1])
         push!(x₂, evaluate(x[2], tt))#x[2].coeffs[1])
@@ -487,11 +471,12 @@ function test(order::Int, Δq::Float64, duration::Float64)
   end
   println(it)
 end
-δ = 5e-7
-@time test(4, δ, 500.0)
-#plot(tₚ, [abs(x₁-xe₁), abs(x₂-xe₂)])
+δ = 5e-12
+@time test(4, δ, 2000.0)
+
 
 #plot(tₚ, [x₁, q₁, xe₁, x₂, q₂, xe₂])
 #gui()
 
-println("$(mean(abs(x₁-xe₁))), $(maximum(abs(x₁-xe₁))), $(mean(abs(x₂-xe₂))), $(maximum(abs(x₂-xe₂))), $(2δ)")
+println("$(mean(abs.(x₁-xe₁))), $(maximum(abs.(x₁-xe₁))), $(mean(abs.(x₂-xe₂))), $(maximum(abs.(x₂-xe₂))), $(2δ)")
+plot(tₚ, [abs.(x₁-xe₁), abs.(x₂-xe₂)])

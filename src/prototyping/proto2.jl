@@ -1,6 +1,8 @@
 using TaylorSeries
 #using Plots
 
+#plotlyjs()
+
 tₚ = Float64[]
 xe₁ = Float64[]
 xe₂ = Float64[]
@@ -22,7 +24,7 @@ function quadratic(coeff::Vector{Float64})
   if coeff[3] == 0.0
     res = linear(coeff[1:2])
   else
-    res = Array(Complex{Float64}, 2)
+    res = Array{Complex{Float64}}(2)
     if coeff[1] == 0.0
       res[1] = 0.0
       res[2] = linear(coeff[2:3])
@@ -56,7 +58,7 @@ function cubic(coeff::Vector{Float64})
   if coeff[4] == 0.0
     res = quadratic(coeff[1:3])
   else
-    res = Array(Complex{Float64}, 3)
+    res = Array{Complex{Float64}}(3)
     if coeff[1] == 0.0
       res[1] = 0.0
       res[2:3] = quadratic(coeff[2:4])
@@ -94,7 +96,7 @@ function quartic(coeff::Vector{Float64})
   if coeff[5] == 0.0
     res = cubic(coeff[1:4])
   else
-    res = Array(Complex{Float64}, 4)
+    res = Array{Complex{Float64}}(4)
     if coeff[1] == 0.0
       res[1] = 0.0
       res[2:4] = cubic(coeff[2:5])
@@ -139,7 +141,7 @@ function roots(coeff::Vector{Float64}) :: Vector{Complex{Float64}}
     if coeff[n] == 0.0
       res = roots(coeff[1:n-1])
     else
-      res = Array(Complex{Float64}, n-1)
+      res = Array{Complex{Float64}}(n-1)
       if coeff[1] == 0.0
         res[1] = 0.0
         res[2:n-1] = roots(coeff[2:n])
@@ -259,7 +261,7 @@ function test(order::Int, Δq::Float64, duration::Float64)
   E = -C./λ
   D = -E + inv(P)*[0.0; 20.0]
   f = [f₁, f₂]
-  q = [Taylor1(zeros(order+1))+0.0, Taylor1(zeros(order+1))+20.0]
+  q = [0*Taylor1(zeros(order+1))+0.0, 0*Taylor1(zeros(order+1))+20.0]
   x = [integrate(f[1](q), 0.0), integrate(f[2](q), 20.0)]
   for i in 1:order-1
     q = deepcopy(x)
@@ -297,166 +299,27 @@ function test(order::Int, Δq::Float64, duration::Float64)
     ##println("$t, $i, q = $(q[i])")
     q[j] = evaluate(q[j], Taylor1([t-tₒ, 1.0]))
     ##println("$t, $j, q = $(q[j])")
-    q̲ = deepcopy(q)
-    q̲[i] = Taylor1(zeros(order+1))+x₀-Δq
-    x̲ = integrate(f[i](q̲), x₀)
-    for k in 1:order-1
-      q̲[i] = x̲-Δq
-      x̲ = integrate(f[i](q̲), x₀)
-    end
-    ##println("$t, $i, x̲ = $x̲")
-    q̲[i] = x̲-Δq
-    q̲[i].coeffs[end] = 0.0
-    q̅ = deepcopy(q)
-    q̅[i] = Taylor1(zeros(order+1))+x₀+Δq
-    x̅ = integrate(f[i](q̅), x₀)
-    for k in 1:order-1
-      q̅[i] = x̅+Δq
-      x̅ = integrate(f[i](q̅), x₀)
-    end
-    ##println("$t, $i, x̅ = $x̅")
-    q̅[i] = x̅+Δq
-    q̅[i].coeffs[end] = 0.0
-    ##println("$t, $i, x = $(x[i])")
-    if x̲.coeffs[end] * x̅.coeffs[end] > 0.0
-      if x̅.coeffs[end] > 0.0
-        x[i] = deepcopy(x̅)
-        q = deepcopy(q̅)
-        #q[i] = deepcopy(x[i])
-        #q[i].coeffs[1] += Δq
-        #q[i].coeffs[end] = 0.0
-      else
-        x[i] = deepcopy(x̲)
-        q = deepcopy(q̲)
-        #q[i] = deepcopy(x[i])
-        #q[i].coeffs[1] -= Δq
-        #q[i].coeffs[end] = 0.0
-      end
-      #x[i] = integrate(f[i](q), x₀)
-      tₙ[i] = t + (abs(Δq/x[i].coeffs[end]))^(1.0/order)
-      # if x[i].coeffs[2:end] == q[i].coeffs[2:end]
-      #   tₙ[i] = Inf
-      # else
-      #   p = x[i].coeffs-q[i].coeffs
-      #   p[1] = -Δq
-      #   a = roots(Poly(p))
-      #   p[1] = Δq
-      #   b = roots(Poly(p))
-      #   r = filter(v->abs(imag(v)) < 1.0e-15 && real(v)>=0.0, [a..., b...])
-      #   min_r = Inf
-      #   for val_r in r
-      #     if real(val_r) < min_r
-      #       min_r = real(val_r)
-      #     end
-      #   end
-      #   tₙ[i] = t + min_r
-      # end
-      # t₂ = brent(nth_derivative_time, 0.0, tₙ[i]-t, f[i], deepcopy(q), order, i)
-      # println("$(tₙ[i]), $(t₂+t)")
-      # if t₂ > 0.0 && t + t₂ < tₙ[i]
-      #   tₙ[i] = t + t₂
-      # end
-    # if x[i].coeffs[end] > 0.0
-    #   q[i] = Taylor1(zeros(order+1))+x₀+Δq
-    #   x̃ = integrate(f[i](q), x₀)
-    #   for k in 1:order-1
-    #      q[i] = x̃+Δq
-    #      x̃ = integrate(f[i](q), x₀)
-    #   end
-    # else
-    #   q[i] = Taylor1(zeros(order+1))+x₀-Δq
-    #   x̃ = integrate(f[i](q), x₀)
-    #   for k in 1:order-1
-    #      q[i] = x̃-Δq
-    #      x̃ = integrate(f[i](q), x₀)
-    #   end
-    # end
-    # println("$t, $i, x = $(x[i])")
-    # println("$t, $i, x̃ = $(x̃)")
-    # if x̃.coeffs[end] * x[i].coeffs[end] > 0.0
-    #   x[i] = deepcopy(x̃)
-    #   tₙ[i] = t + (abs(Δq/x[i].coeffs[end]))^(1.0/order)
-    #   # q₀ = copy(q[i].coeffs[1])
-    #   # q[i] = deepcopy(x[i])
-    #   # q[i].coeffs[1] = q₀
-    #   # q[i].coeffs[end] = 0.0
-    #   # x[i] = integrate(f[i](q), x₀)
-    #   # for k in 1:order-1
-    #   #    q[i] = deepcopy(x[i])
-    #   #    q[i].coeffs[1] = q₀
-    #   #    x[i] = integrate(f[i](q), x₀)
-    #   # end
-    #   # p = x[i].coeffs-q[i].coeffs
-    #   # p[1] = -Δq
-    #   # a = roots(Poly(p))
-    #   # p[1] = Δq
-    #   # b = roots(Poly(p))
-    #   # r = filter(v->abs(imag(v)) < 1.0e-15 && real(v)>=0.0, [a..., b...])
-    #   # min_r = Inf
-    #   # for val_r in r
-    #   #   if real(val_r) < min_r
-    #   #     min_r = real(val_r)
-    #   #   end
-    #   # end
-    #   # tₙ[i] = t + min_r
-    # elseif x[i].coeffs[end] > 0.0 && x[i].coeffs[end] * x̅.coeffs[end] > 0.0
-    #   x[i] = deepcopy(x̅)
-    #   q = deepcopy(q̅)
-    #   tₙ[i] = t + (abs(Δq/x[i].coeffs[end]))^(1.0/order)
-    # elseif x[i].coeffs[end] < 0.0 && x[i].coeffs[end] * x̲.coeffs[end] > 0.0
-    #   x[i] = deepcopy(x̲)
-    #   q = deepcopy(q̲)
-    #   tₙ[i] = t + (abs(Δq/x[i].coeffs[end]))^(1.0/order)
-    else
-      q̃ = brent(nth_derivative, x₀-Δq, x₀+Δq, f[i], deepcopy(q), order, i; xtol=min(Δq/100,1e-7))
-      q[i] = Taylor1(zeros(order+1))+q̃
-      x[i] = integrate(f[i](q), x₀)
-      for k in 1:order-1
-        q[i] = deepcopy(x[i])
-        q[i].coeffs[1] = q̃
-        x[i] = integrate(f[i](q), x₀)
-      end
-      q[i].coeffs[end] = 0.0
-      if x[i].coeffs[2:end] == q[i].coeffs[2:end]
-        tₙ[i] = Inf
-      else
-        p = x[i].coeffs-q[i].coeffs
-        p[1] = -Δq
-        a = roots(p)
-        p[1] = Δq
-        b = roots(p)
-        r = filter(v->abs(imag(v)) < 1.0e-15 && real(v)>=0.0, [a..., b...])
-        min_r = Inf
-        for val_r in r
-          if real(val_r) < min_r
-            min_r = real(val_r)
-          end
-        end
-        tₙ[i] = t + min_r
-      end
-    end
+    q[i] = deepcopy(x[i])
+    q[i][end] = 0.0
+    tₙ[i] = t + (abs(Δq/x[i].coeffs[end]))^(1.0/order)
     #println("$t, $i, q = $(q[i])")
     #println("$t, $i, x = $(x[i])")
     x₀ = evaluate(x[j], t-tₒ)
     x[j] = integrate(f[j](q), x₀)
     #println("$t, $j, x = $(x[j])")
-    if x[j].coeffs[2:end] == q[j].coeffs[2:end]
-      tₙ[j] = Inf
-    else
-      p = x[j].coeffs-q[j].coeffs
-      p[1] = -Δq
-      a = roots(p)
-      p[1] = Δq
-      b = roots(p)
-      r = filter(v->abs(imag(v)) < 1.0e-15 && real(v)>=0.0, [a..., b...])
-      min_r = Inf
-      for val_r in r
-        if real(val_r) < min_r
-          min_r = real(val_r)
-        end
+    p = (x[j]-q[j]).coeffs
+    p[1] -= Δq
+    a = roots(p)
+    p[1] += 2Δq
+    b = roots(p)
+    r = filter(v->abs(imag(v)) < 1.0e-15 && real(v)>=0.0, [a..., b...])
+    min_r = Inf
+    for val_r in r
+      if real(val_r) < min_r
+        min_r = real(val_r)
       end
-      tₙ[j] = t + min_r
     end
+    tₙ[j] = t + min_r
     # t₂ = brent(nth_derivative_time, 0.0, tₙ[j]-t, f[j], deepcopy(q), order, i)
     # println("$(tₙ[j]), $(t₂+t)")
     # if t₂ > 0.0 && t + t₂ < tₙ[j]
@@ -469,11 +332,8 @@ function test(order::Int, Δq::Float64, duration::Float64)
   end
   println(it)
 end
-δ = 5e-7
+δ = 1e-6
 @time test(4, δ, 500.0)
 #plot(tₚ, [abs(x₁-xe₁), abs(x₂-xe₂)])
-
-#plot(tₚ, [x₁, q₁, xe₁, x₂, q₂, xe₂])
-#gui()
-
 println("$(mean(abs.(x₁-xe₁))), $(maximum(abs.(x₁-xe₁))), $(mean(abs.(x₂-xe₂))), $(maximum(abs.(x₂-xe₂))), $(2δ)")
+#plot(tₚ, [x₁, q₁, xe₁, x₂, q₂, xe₂])
